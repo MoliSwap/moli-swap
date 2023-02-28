@@ -2,7 +2,7 @@
 ;; moli-token
 ;; <add a description here>
 
-(impl-trait 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard.sip-010-trait)
+;; (impl-trait 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard.sip-010-trait)
 
 
 
@@ -55,12 +55,13 @@
 ;; public functions
 
 ;; transfer function 
-(define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
+;; sample call (contract-call? .moli-token transfer u500 tx-sender 'STNHKEPYEPJ8ET55ZZ0M5A34J0R3N5FM2CMMMAZ6 (some 0x123456) ) (memo (optional (buff 34)))
+(define-public (transfer (amount uint) (sender principal) (recipient principal) )
     (begin
         (asserts! (is-eq tx-sender sender) err-not-token-owner)
                 ;; #[filter(amount, recipient)]
         (try! (ft-transfer? moli amount sender recipient))
-        (match memo to-print (print to-print) 0x)
+        ;; (match memo to-print (print to-print) 0x)
         (ok true)
     )
 )

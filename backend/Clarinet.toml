@@ -7,6 +7,11 @@ cache_dir = '.\.cache'
 
 [[project.requirements]]
 contract_id = 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard'
+[contracts.moli-lp]
+path = 'contracts/moli-lp.clar'
+clarity_version = 1
+epoch = 2.0
+
 [contracts.moli-swap]
 path = 'contracts/moli-swap.clar'
 clarity_version = 1
