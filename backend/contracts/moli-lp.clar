@@ -2,26 +2,24 @@
 ;; moli-lp
 ;; <add a description here>
 
+(define-fungible-token moli-lp)
+
+
 ;; constants
 ;;
 
+(define-constant err-minter-only (err u300))
+(define-constant err-amount-zero (err u301))
+
 ;; data maps and vars
 ;;
-
+(define-data-var allowed-minter principal tx-sender)
 ;; private functions
 ;;
 
 ;; public functions
 ;;
-
-;; contracts/magic-beans-lp.clar
-(define-fungible-token moli-lp)
-
-(define-constant err-minter-only (err u300))
-(define-constant err-amount-zero (err u301))
-
-(define-data-var allowed-minter principal tx-sender)
-
+;; return the token total supply
 (define-read-only (get-total-supply)
   (ft-get-supply moli-lp)
 )
@@ -47,11 +45,16 @@
   )
 )
 
-;; 
+;; return the token decimal
 (define-read-only (get-decimals) 
   (ok u6)
 )
-
+;; return the token symboll
 (define-read-only (get-symbol)
-  (ok "MOLI-LP")
+  (ok "Moli-LP")
+)
+
+;; return the token name
+(define-read-only (get-name)
+    (ok "Moli LP Token")
 )

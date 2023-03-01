@@ -1,26 +1,24 @@
 
-;; moli-token
+;; lima-token
 ;; <add a description here>
-
-;; (impl-trait 'SP3FBR2AGK5H9QBDH3EEN6DF8EK8JY7RX8QJ5SVTE.sip-010-trait-ft-standard.sip-010-trait)
 
 ;; constants
 ;;
 (define-constant contract-owner tx-sender)
-(define-constant err-owner-only (err u100))
-(define-constant err-not-token-owner (err u101))
+(define-constant err-owner-only (err u400))
+(define-constant err-not-token-owner (err u401))
 
-;; moli token would have no maximum supply!
-(define-fungible-token moli)
+;; lima token would have no maximum supply!
+(define-fungible-token lima)
 
 ;; return the token name
 (define-read-only (get-name)
-    (ok "Moli Token")
+    (ok "lima Token")
 )
 
 ;; return the token symbol
 (define-read-only (get-symbol)
-    (ok "Moli")
+    (ok "lima")
 )
 
 ;; return the decimals of the token
@@ -30,17 +28,17 @@
 
 ;; return te token balance
 (define-read-only (get-balance (who principal))
-  (ft-get-balance moli who)
+  (ft-get-balance lima who)
 )
 
 
-;; return the total supply of the moli token
+;; return the total supply of the lima token
 (define-read-only (get-total-supply)
-    (ok (ft-get-supply moli))
+    (ok (ft-get-supply lima))
 )
 
 
-;; return the link to the metadata of the moli token assets
+;; return the link to the metadata of the lima token assets
 (define-read-only (get-token-uri)
     (ok none)
 )
@@ -49,12 +47,12 @@
 ;; public functions
 
 ;; transfer function 
-;; sample call (contract-call? .moli-token transfer u500 tx-sender 'STNHKEPYEPJ8ET55ZZ0M5A34J0R3N5FM2CMMMAZ6 (some 0x123456) ) (memo (optional (buff 34)))
+;; sample call (contract-call? .lima-token transfer u500 tx-sender 'STNHKEPYEPJ8ET55ZZ0M5A34J0R3N5FM2CMMMAZ6 (some 0x123456) ) (memo (optional (buff 34)))
 (define-public (transfer (amount uint) (sender principal) (recipient principal) )
     (begin
         (asserts! (is-eq tx-sender sender) err-not-token-owner)
                 ;; #[filter(amount, recipient)]
-        (try! (ft-transfer? moli amount sender recipient))
+        (try! (ft-transfer? lima amount sender recipient))
         ;; (match memo to-print (print to-print) 0x)
         (ok true)
     )
@@ -65,6 +63,6 @@
     (begin
         (asserts! (is-eq tx-sender contract-owner) err-owner-only)
                 ;; #[filter(amount, recipient)]
-        (ft-mint? moli amount recipient)
+        (ft-mint? lima amount recipient)
     )
 )
