@@ -58,3 +58,8 @@
 (define-read-only (get-name)
     (ok "Moli LP Token")
 )
+
+;; Any user can burn any amount of their own tokens
+(define-public (burn (amount uint))
+  (ft-burn? moli-lp amount tx-sender)
+)
