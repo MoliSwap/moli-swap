@@ -156,34 +156,35 @@
 )
 
 
-;; ;; Anyone can remove liquidity by burning their LP tokens
-;; ;; in exchange for receiving their proportion of the STX and token balances
-;; (define-public (remove-liquidity (liquidity-burned uint))
-;;   (begin
-;;     (asserts! (> liquidity-burned u0) err-zero-tokens)
+;; Anyone can remove liquidity by burning their LP tokens
+;; in exchange for receiving their proportion of the STX and token balances
+(define-public (remove-liquidity (liquidity-burned uint))
+  (begin
+    (asserts! (> liquidity-burned u0) err-zero-tokens)
 
-;;       (let 
-;;         (
-;;             (stx-balance (get-stx-balance))
-;;             (token-balance (get-token-balance))
-;;             (liquidity-token-supply (contract-call? .magic-beans-lp get-total-supply))
+      (let 
+        (
+            (stx-balance (get-stx-balance))
+            (token-balance (get-token-balance))
+            (liquidity-token-supply (contract-call? .moli-lp get-total-supply))
 
-;;             ;; STX withdrawn = liquidity-burned * existing STX balance / total existing LP tokens
-;;             ;; Tokens withdrawn = liquidity-burned * existing token balance / total existing LP tokens
-;;             (stx-withdrawn (/ (* stx-balance liquidity-burned) liquidity-token-supply))
-;;             (tokens-withdrawn (/ (* token-balance liquidity-burned) liquidity-token-supply))
+            ;; STX withdrawn = liquidity-burned * existing STX balance / total existing LP tokens
+            ;; Tokens withdrawn = liquidity-burned * existing token balance / total existing LP tokens
+            (stx-withdrawn (/ (* stx-balance liquidity-burned) liquidity-token-supply))
+            (tokens-withdrawn (/ (* token-balance liquidity-burned) liquidity-token-supply))
 
-;;             (contract-address (as-contract tx-sender))
-;;             (burner tx-sender)
-;;         )
-;;       (begin 
-;;         ;; burn liquidity tokens as tx-sender
-;;         (try! (contract-call? .magic-beans-lp burn liquidity-burned))
-;;         ;; transfer STX from contract to tx-sender
-;;         (try! (as-contract (stx-transfer? stx-withdrawn contract-address burner)))
-;;         ;; transfer tokens from contract to tx-sender
-;;         (as-contract (contract-call? .magic-beans transfer tokens-withdrawn contract-address burner))
-;;       )
-;;     )
-;;   )
-;; )
+            (contract-address (as-contract tx-sender))
+            (burner tx-sender)
+        )
+      (begin 
+        ;; burn liquidity tokens as tx-sender
+        (try! (contract-call? .moli-lp burn liquidity-burned))
+        ;; transfer STX from contract to tx-sender
+        (try! (as-contract (stx-transfer? stx-withdrawn contract-address burner)))
+        ;; transfer tokens from contract to tx-sender
+        (as-contract (contract-call? .moli-token transfer tokens-withdrawn contract-address burner))
+      )
+    )
+  )
+)
+
