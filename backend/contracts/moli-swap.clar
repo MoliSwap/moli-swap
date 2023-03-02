@@ -37,13 +37,16 @@
 )
 
 ;; Provide initial liquidity, defining the initial exchange ratio 
-(define-private (first-provide-liquidity (stx-amount uint) (token-amount uint) )
-    (begin
+(define-private (first-provide-liquidity (stx-amount uint) (token-amount uint) (provider principal) )
+  
+       (begin
       ;; send STX from tx-sender to the contract
       (try! (stx-transfer? stx-amount tx-sender (as-contract tx-sender)))
       ;; send tokens from tx-sender to the contract
-      ;; sample transaction call (contract-call? .moli-token transfer u500 tx-sender 'STNHKEPYEPJ8ET55ZZ0M5A34J0R3N5FM2CMMMAZ6 
-    (contract-call? .moli-token transfer token-amount tx-sender (as-contract tx-sender) )
+      (try! (contract-call? .moli-token transfer token-amount tx-sender (as-contract tx-sender)))
+      ;; mint LP tokens to tx-sender
+      ;; inside as-contract the tx-sender is the exchange contract, so we use tx-sender passed into the function
+      (as-contract (contract-call? .moli-lp mint stx-amount provider))
     )
 )
 
@@ -88,7 +91,7 @@
     (asserts! (> max-token-amount u0) err-zero-tokens)
 
     (if (is-eq (get-stx-balance) u0) 
-      (first-provide-liquidity stx-amount max-token-amount)
+      (first-provide-liquidity stx-amount max-token-amount tx-sender)
       (add-liquidity stx-amount)
     )
   )
@@ -124,8 +127,8 @@
     )
   )
 )
-;; Allow users to exchange tokens and receive STX using the constant-product formula
-(define-public (token-to-stx-swap (token-amount uint) (memo (optional (buff 34))))
+;; Allow users to exchange tokens and receive STX using the constant-product formula 
+(define-public (token-to-stx-swap (token-amount uint) )
   (begin 
     (asserts! (> token-amount u0) err-zero-tokens)
     
