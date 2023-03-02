@@ -1,5 +1,13 @@
+<div align="center">
+  <br>
+  <img alt="logo" src="/image.png" width="200px">
+  <h1>Just swap, don't worry about gas fees</h1>
+</div>
+<br>
+
 # MoliSwap
 This is a repository for moli swap
+
 ## How it Works
 To use MoliSwap, all you need to do is connect your STACKS compartible wallet to the dapp and go to the navigate to the section of your interesst.
 ### Provide Liquidity
