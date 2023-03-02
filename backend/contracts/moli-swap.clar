@@ -19,16 +19,21 @@
 
 (define-constant err-zero-stx (err u200))
 (define-constant err-zero-tokens (err u201))
-(define-constant fee-basis-points u30) ;; 0.3%
+(define-constant fee-basis-points u50) ;; 0.5%
 
 ;; Get contract STX balance
 (define-private (get-stx-balance)
   (stx-get-balance (as-contract tx-sender))
 )
 
-;; Get contract token balance
-(define-private (get-token-balance)
+;; Get contract moli token balance
+(define-private (get-moli-balance)
   (contract-call? .moli-token get-balance (as-contract tx-sender))
+)
+
+;; Get contract lima token balance
+(define-private (get-lima-balance)
+  (contract-call? .lima-token get-balance (as-contract tx-sender))
 )
 
 ;; Provide initial liquidity, defining the initial exchange ratio 
@@ -43,15 +48,15 @@
 )
 
 ;; Provide additional liquidity, matching the current ratio
-;; We don't have a max token amount, that's handled by post-conditions
+;; the max token amount would be handled by post-conditions
 (define-private ( add-liquidity (stx-amount uint))
   (let (
       ;; new tokens = additional STX * existing token balance / existing STX balance
       (contract-address (as-contract tx-sender))
 
-       (stx-balance (get-stx-balance))
-      (token-balance (get-token-balance))
-      (tokens-to-transfer (/ (* stx-amount token-balance) stx-balance))
+      (stx-balance (get-stx-balance))
+      (moli-balance (get-moli-balance))
+      (tokens-to-transfer (/ (* stx-amount moli-balance) stx-balance))
       
       ;; new LP tokens = additional STX / existing STX balance * total existing LP tokens
       (liquidity-token-supply (contract-call? .moli-lp get-total-supply))
@@ -61,8 +66,8 @@
       (liquidity-to-mint (/ (* stx-amount liquidity-token-supply) stx-balance))
 
       (provider tx-sender)
-    ;;   (token-balance (get-token-balance))
-    ;;   (tokens-to-transfer (/ (* stx-amount token-balance) (get-stx-balance)))
+    ;;   (moli-balance (get-moli-balance))
+    ;;   (tokens-to-transfer (/ (* stx-amount moli-balance) (get-stx-balance)))
     )
     (begin 
       ;; transfer STX from liquidity provider to contract
@@ -96,16 +101,16 @@
     
     (let (
       (stx-balance (get-stx-balance))
-      (token-balance (get-token-balance))
+      (moli-balance (get-moli-balance))
       ;; constant to maintain = STX * tokens
-      (constant (* stx-balance token-balance))
+      (constant (* stx-balance moli-balance))
         ;; charge the fee. Fee is in basis points (1 = 0.01%), so divide by 10,000
       (fee (/ (* stx-amount fee-basis-points) u10000))
       (new-stx-balance (+ stx-balance stx-amount))
         ;; constant should = (new STX - fee) * new tokens
-      (new-token-balance (/ constant (- new-stx-balance fee)))
+      (new-moli-balance (/ constant (- new-stx-balance fee)))
       ;; pay the difference between previous and new token balance to user
-      (tokens-to-pay (- token-balance new-token-balance))
+      (tokens-to-pay (- moli-balance new-moli-balance))
       ;; put addresses into variables for ease of use
       (user-address tx-sender)
       (contract-address (as-contract tx-sender))
@@ -126,14 +131,14 @@
     
     (let (
       (stx-balance (get-stx-balance))
-      (token-balance (get-token-balance))
+      (moli-balance (get-moli-balance))
       ;; constant to maintain = STX * tokens
-      (constant (* stx-balance token-balance))
+      (constant (* stx-balance moli-balance))
       ;; charge the fee. Fee is in basis points (1 = 0.01%), so divide by 10,000
       (fee (/ (* token-amount fee-basis-points) u10000))
-      (new-token-balance (+ token-balance token-amount))
+      (new-moli-balance (+ moli-balance token-amount))
       ;; constant should = new STX * (new tokens - fee)
-      (new-stx-balance (/ constant (- new-token-balance fee)))
+      (new-stx-balance (/ constant (- new-moli-balance fee)))
       ;; pay the difference between previous and new STX balance to user
       (stx-to-pay (- stx-balance new-stx-balance))
       ;; put addresses into variables for ease of use
@@ -142,8 +147,8 @@
     )
       (begin
        (print fee)
-        (print new-token-balance)
-        (print (- new-token-balance fee))
+        (print new-moli-balance)
+        (print (- new-moli-balance fee))
         (print new-stx-balance)
         (print stx-to-pay)
         ;; transfer tokens from user to contract
@@ -165,13 +170,13 @@
       (let 
         (
             (stx-balance (get-stx-balance))
-            (token-balance (get-token-balance))
+            (moli-balance (get-moli-balance))
             (liquidity-token-supply (contract-call? .moli-lp get-total-supply))
 
             ;; STX withdrawn = liquidity-burned * existing STX balance / total existing LP tokens
             ;; Tokens withdrawn = liquidity-burned * existing token balance / total existing LP tokens
             (stx-withdrawn (/ (* stx-balance liquidity-burned) liquidity-token-supply))
-            (tokens-withdrawn (/ (* token-balance liquidity-burned) liquidity-token-supply))
+            (tokens-withdrawn (/ (* moli-balance liquidity-burned) liquidity-token-supply))
 
             (contract-address (as-contract tx-sender))
             (burner tx-sender)
