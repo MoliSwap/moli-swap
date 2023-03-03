@@ -1,4 +1,3 @@
-
 ;; moli-swap
 ;; <add a description here>
 
@@ -36,98 +35,147 @@
   (contract-call? .lima-token get-balance (as-contract tx-sender))
 )
 
-;; Provide initial liquidity, defining the initial exchange ratio 
-(define-private (first-provide-liquidity (stx-amount uint) (token-amount uint) )
+;; Provide initial liquidity for STX/moli, which defines the initial exchange ratio for the STX/moli pair
+
+(define-private (provide-first-moli-liquidity (stx-amount uint) (moli-amount uint) )
     (begin
-      ;; send STX from tx-sender to the contract
       (try! (stx-transfer? stx-amount tx-sender (as-contract tx-sender)))
-      ;; send tokens from tx-sender to the contract
-      ;; sample transaction call (contract-call? .moli-token transfer u500 tx-sender 'STNHKEPYEPJ8ET55ZZ0M5A34J0R3N5FM2CMMMAZ6 
-    (contract-call? .moli-token transfer token-amount tx-sender (as-contract tx-sender) )
+      (contract-call? .moli-token transfer moli-amount tx-sender (as-contract tx-sender) )
+      ;; TODO: mint LP tokens for the LP provider
+      
     )
 )
 
-;; Provide additional liquidity, matching the current ratio
-;; the max token amount would be handled by post-conditions
-(define-private ( add-liquidity (stx-amount uint))
-  (let (
-      ;; new tokens = additional STX * existing token balance / existing STX balance
-      (contract-address (as-contract tx-sender))
-
-      (stx-balance (get-stx-balance))
-      (moli-balance (get-moli-balance))
-      (tokens-to-transfer (/ (* stx-amount moli-balance) stx-balance))
-      
-      ;; new LP tokens = additional STX / existing STX balance * total existing LP tokens
-      (liquidity-token-supply (contract-call? .moli-lp get-total-supply))
-      ;; I've reversed the direction a bit here: we need to be careful not to do a division that floors to zero
-      ;; additional STX / existing STX balance is likely to!
-      ;; Then we end up with zero LP tokens and a sad tx-sender
-      (liquidity-to-mint (/ (* stx-amount liquidity-token-supply) stx-balance))
-
-      (provider tx-sender)
-    ;;   (moli-balance (get-moli-balance))
-    ;;   (tokens-to-transfer (/ (* stx-amount moli-balance) (get-stx-balance)))
+;; Provide initial liquidity for STX/lima, which defines the initial exchange ratio for the STX/lima pair
+(define-private (provide-first-lima-liquidity (stx-amount uint) (lima-amount uint) )
+    (begin
+      (try! (stx-transfer? stx-amount tx-sender (as-contract tx-sender))) 
+      (contract-call? .lima-token transfer lima-amount tx-sender (as-contract tx-sender) )
+       ;; TODO: mint LP tokens for the LP provider
     )
+)
+
+;; Provide additional liquidity, that matches already set exchange ratio
+(define-private ( add-moli-liquidity (stx-amount uint))
+  (let (
+          (contract-address (as-contract tx-sender))
+          (stx-balance (get-stx-balance))
+          (moli-balance (get-moli-balance))
+          (moli-tokens-to-transfer (/ (* stx-amount moli-balance) stx-balance))
+          (liquidity-token-supply (contract-call? .moli-lp get-total-supply))
+          (liquidity-to-mint (/ (* stx-amount liquidity-token-supply) stx-balance))
+          (provider tx-sender)
+        )
     (begin 
-      ;; transfer STX from liquidity provider to contract
       (try! (stx-transfer? stx-amount tx-sender contract-address))
-        ;; transfer tokens from liquidity provider to contract
-      (try! (contract-call? .moli-token transfer tokens-to-transfer tx-sender contract-address))
-      ;; mint LP tokens to tx-sender
-      ;; inside as-contract the tx-sender is the exchange contract, so we use tx-sender passed into the function
+      (try! (contract-call? .moli-token transfer moli-tokens-to-transfer tx-sender contract-address))
       (as-contract (contract-call? .moli-lp mint liquidity-to-mint provider))
     )
   )
 )
 
-;; Anyone can provide liquidity by transferring STX and tokens to the contract
-(define-public (provide-liquidity (stx-amount uint) (max-token-amount uint))
-  (begin
-    (asserts! (> stx-amount u0) err-zero-stx)
-    (asserts! (> max-token-amount u0) err-zero-tokens)
-
-    (if (is-eq (get-stx-balance) u0) 
-      (first-provide-liquidity stx-amount max-token-amount)
-      (add-liquidity stx-amount)
+;; Provide additional liquidity, that matches already set exchange ratio
+(define-private ( add-lima-liquidity (stx-amount uint))
+  (let (
+      ;; new tokens = additional STX * existing token balance / existing STX balance
+          (contract-address (as-contract tx-sender))
+          (stx-balance (get-stx-balance))
+          (lima-balance (get-lima-balance))
+          (lima-tokens-to-transfer (/ (* stx-amount lima-balance) stx-balance))
+          (liquidity-token-supply (contract-call? .moli-lp get-total-supply))
+          ;; I've reversed the direction a bit here: we need to be careful not to do a division that floors to zero
+          ;; additional STX / existing STX balance is likely to!
+          ;; Then we end up with zero LP tokens and a sad tx-sender
+          (liquidity-to-mint (/ (* stx-amount liquidity-token-supply) stx-balance))
+          (provider tx-sender)
+        )
+    (begin 
+          (try! (stx-transfer? stx-amount tx-sender contract-address))
+          (try! (contract-call? .lima-token transfer lima-tokens-to-transfer tx-sender contract-address))
+          (as-contract (contract-call? .moli-lp mint liquidity-to-mint provider))
     )
   )
 )
 
-;; Allow users to exchange STX and receive tokens at the current exchange rate
-(define-public (stx-to-token-swap (stx-amount uint))
+;; function for proviing liquidity for STX/moli to the contract
+(define-public (provide-moli-liquidity (stx-amount uint) (max-moli-amount uint))
+  (begin
+    (asserts! (> stx-amount u0) err-zero-stx)
+    (asserts! (> max-moli-amount u0) err-zero-tokens)
+
+    (if (is-eq (get-stx-balance) u0) 
+      (provide-first-moli-liquidity stx-amount max-moli-amount)
+      (add-moli-liquidity stx-amount)
+    )
+  )
+)
+
+;; function for proviing liquidity for STX/lima to the contract
+(define-public (provide-lima-liquidity (stx-amount uint) (max-lima-amount uint))
+  (begin
+    (asserts! (> stx-amount u0) err-zero-stx)
+    (asserts! (> max-lima-amount u0) err-zero-tokens)
+    (if (is-eq (get-stx-balance) u0) 
+      (provide-first-lima-liquidity stx-amount max-lima-amount)
+      (add-lima-liquidity stx-amount)
+    )
+  )
+)
+
+;; function for swaping STX/moli at the set exchange rate
+(define-public (stx-to-moli-swap (stx-amount uint))
   (begin 
     (asserts! (> stx-amount u0) err-zero-stx)
-    
     (let (
       (stx-balance (get-stx-balance))
       (moli-balance (get-moli-balance))
-      ;; constant to maintain = STX * tokens
-      (constant (* stx-balance moli-balance))
-        ;; charge the fee. Fee is in basis points (1 = 0.01%), so divide by 10,000
+      (lima-balance (get-lima-balance))
+      (constant (+ (* stx-balance moli-balance) (* stx-balance lima-balance)))
       (fee (/ (* stx-amount fee-basis-points) u10000))
       (new-stx-balance (+ stx-balance stx-amount))
-        ;; constant should = (new STX - fee) * new tokens
       (new-moli-balance (/ constant (- new-stx-balance fee)))
-      ;; pay the difference between previous and new token balance to user
-      (tokens-to-pay (- moli-balance new-moli-balance))
-      ;; put addresses into variables for ease of use
+      (moli-tokens-to-pay (- moli-balance new-moli-balance))
       (user-address tx-sender)
       (contract-address (as-contract tx-sender))
     )
       (begin
-        ;; transfer STX from user to contract
         (try! (stx-transfer? stx-amount user-address contract-address))
-        ;; transfer tokens from contract to user
-        (as-contract (contract-call? .moli-token transfer tokens-to-pay contract-address user-address))
+        (as-contract (contract-call? .moli-token transfer moli-tokens-to-pay contract-address user-address))
       )
     )
   )
 )
-;; Allow users to exchange tokens and receive STX using the constant-product formula
-(define-public (token-to-stx-swap (token-amount uint) (memo (optional (buff 34))))
+
+;; function for swaping STX/lima at the set exchange rate
+
+;; TODO: this function is not conclusive yet, need to work on the proportion 
+;; of the lima token in the pool
+(define-public (stx-to-lima-swap (stx-amount uint))
   (begin 
-    (asserts! (> token-amount u0) err-zero-tokens)
+    (asserts! (> stx-amount u0) err-zero-stx)
+    (let (
+      (stx-balance (get-stx-balance))
+      (moli-balance (get-moli-balance))
+      (lima-balance (get-lima-balance))
+      (constant (+ (* stx-balance moli-balance) (* stx-balance lima-balance)))
+      (fee (/ (* stx-amount fee-basis-points) u10000))
+      (new-stx-balance (+ stx-balance stx-amount))
+      (new-lima-balance (/ constant (- new-stx-balance fee)))
+      (lima-tokens-to-pay (- lima-balance new-lima-balance))
+      (user-address tx-sender)
+      (contract-address (as-contract tx-sender))
+    )
+      (begin
+        (try! (stx-transfer? stx-amount user-address contract-address))
+        (as-contract (contract-call? .moli-token transfer lima-tokens-to-pay contract-address user-address))
+      )
+    )
+  )
+)
+;; function for swaping moli/STX at the set exchange rate
+(define-public (token-to-stx-swap (moli-amount uint) )
+  (begin 
+    (asserts! (> moli-amount u0) err-zero-tokens)
     
     (let (
       (stx-balance (get-stx-balance))
@@ -135,8 +183,8 @@
       ;; constant to maintain = STX * tokens
       (constant (* stx-balance moli-balance))
       ;; charge the fee. Fee is in basis points (1 = 0.01%), so divide by 10,000
-      (fee (/ (* token-amount fee-basis-points) u10000))
-      (new-moli-balance (+ moli-balance token-amount))
+      (fee (/ (* moli-amount fee-basis-points) u10000))
+      (new-moli-balance (+ moli-balance moli-amount))
       ;; constant should = new STX * (new tokens - fee)
       (new-stx-balance (/ constant (- new-moli-balance fee)))
       ;; pay the difference between previous and new STX balance to user
@@ -152,7 +200,7 @@
         (print new-stx-balance)
         (print stx-to-pay)
         ;; transfer tokens from user to contract
-        (try! (contract-call? .moli-token transfer token-amount user-address contract-address))
+        (try! (contract-call? .moli-token transfer moli-amount user-address contract-address))
         ;; transfer tokens from contract to user
         (as-contract (stx-transfer? stx-to-pay contract-address user-address))
       )
@@ -160,9 +208,7 @@
   )
 )
 
-
-;; Anyone can remove liquidity by burning their LP tokens
-;; in exchange for receiving their proportion of the STX and token balances
+;; function for Liquidity Providers to take profit by burning their moli-lp tokens
 (define-public (remove-liquidity (liquidity-burned uint))
   (begin
     (asserts! (> liquidity-burned u0) err-zero-tokens)
