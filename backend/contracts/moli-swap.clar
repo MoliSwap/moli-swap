@@ -35,25 +35,11 @@
   (contract-call? .lima-token get-balance (as-contract tx-sender))
 )
 
-<<<<<<< HEAD
 ;; Provide initial liquidity for STX/moli, which defines the initial exchange ratio for the STX/moli pair
-
 (define-private (provide-first-moli-liquidity (stx-amount uint) (moli-amount uint) (provider principal) )
     (begin
       (try! (stx-transfer? stx-amount tx-sender (as-contract tx-sender)))
       (try! (contract-call? .moli-token transfer moli-amount tx-sender (as-contract tx-sender) ))
-=======
-;; Provide initial liquidity, defining the initial exchange ratio 
-(define-private (first-provide-liquidity (stx-amount uint) (token-amount uint) (provider principal) )
-  
-       (begin
-      ;; send STX from tx-sender to the contract
-      (try! (stx-transfer? stx-amount tx-sender (as-contract tx-sender)))
-      ;; send tokens from tx-sender to the contract
-      (try! (contract-call? .moli-token transfer token-amount tx-sender (as-contract tx-sender)))
-      ;; mint LP tokens to tx-sender
-      ;; inside as-contract the tx-sender is the exchange contract, so we use tx-sender passed into the function
->>>>>>> refs/remotes/origin/master
       (as-contract (contract-call? .moli-lp mint stx-amount provider))
     )
 )
@@ -86,7 +72,6 @@
   )
 )
 
-<<<<<<< HEAD
 ;; Provide additional liquidity, that matches already set exchange ratio
 (define-private ( add-lima-liquidity (stx-amount uint))
   (let (
@@ -106,17 +91,6 @@
           (try! (stx-transfer? stx-amount tx-sender contract-address))
           (try! (contract-call? .lima-token transfer lima-tokens-to-transfer tx-sender contract-address))
           (as-contract (contract-call? .moli-lp mint liquidity-to-mint provider))
-=======
-;; Anyone can provide liquidity by transferring STX and tokens to the contract
-(define-public (provide-liquidity (stx-amount uint) (max-token-amount uint))
-  (begin
-    (asserts! (> stx-amount u0) err-zero-stx)
-    (asserts! (> max-token-amount u0) err-zero-tokens)
-
-    (if (is-eq (get-stx-balance) u0) 
-      (first-provide-liquidity stx-amount max-token-amount tx-sender)
-      (add-liquidity stx-amount)
->>>>>>> refs/remotes/origin/master
     )
   )
 )
@@ -169,17 +143,12 @@
     )
   )
 )
-<<<<<<< HEAD
 
 ;; function for swaping STX/lima at the set exchange rate
 
 ;; TODO: this function is not conclusive yet, need to work on the proportion 
 ;; of the lima token in the pool
 (define-public (stx-to-lima-swap (stx-amount uint))
-=======
-;; Allow users to exchange tokens and receive STX using the constant-product formula 
-(define-public (token-to-stx-swap (token-amount uint) )
->>>>>>> refs/remotes/origin/master
   (begin 
     (asserts! (> stx-amount u0) err-zero-stx)
     (let (
