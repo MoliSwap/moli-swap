@@ -37,21 +37,20 @@
 
 ;; Provide initial liquidity for STX/moli, which defines the initial exchange ratio for the STX/moli pair
 
-(define-private (provide-first-moli-liquidity (stx-amount uint) (moli-amount uint) )
+(define-private (provide-first-moli-liquidity (stx-amount uint) (moli-amount uint) (provider principal) )
     (begin
       (try! (stx-transfer? stx-amount tx-sender (as-contract tx-sender)))
-      (contract-call? .moli-token transfer moli-amount tx-sender (as-contract tx-sender) )
-      ;; TODO: mint LP tokens for the LP provider
-      
+      (try! (contract-call? .moli-token transfer moli-amount tx-sender (as-contract tx-sender) ))
+      (as-contract (contract-call? .moli-lp mint stx-amount provider))
     )
 )
 
 ;; Provide initial liquidity for STX/lima, which defines the initial exchange ratio for the STX/lima pair
-(define-private (provide-first-lima-liquidity (stx-amount uint) (lima-amount uint) )
+(define-private (provide-first-lima-liquidity (stx-amount uint) (lima-amount uint) (provider principal))
     (begin
       (try! (stx-transfer? stx-amount tx-sender (as-contract tx-sender))) 
-      (contract-call? .lima-token transfer lima-amount tx-sender (as-contract tx-sender) )
-       ;; TODO: mint LP tokens for the LP provider
+      (try! (contract-call? .lima-token transfer lima-amount tx-sender (as-contract tx-sender) ))
+      (as-contract (contract-call? .moli-lp mint stx-amount provider))
     )
 )
 
@@ -104,7 +103,7 @@
     (asserts! (> max-moli-amount u0) err-zero-tokens)
 
     (if (is-eq (get-stx-balance) u0) 
-      (provide-first-moli-liquidity stx-amount max-moli-amount)
+      (provide-first-moli-liquidity stx-amount max-moli-amount tx-sender)
       (add-moli-liquidity stx-amount)
     )
   )
@@ -116,7 +115,7 @@
     (asserts! (> stx-amount u0) err-zero-stx)
     (asserts! (> max-lima-amount u0) err-zero-tokens)
     (if (is-eq (get-stx-balance) u0) 
-      (provide-first-lima-liquidity stx-amount max-lima-amount)
+      (provide-first-lima-liquidity stx-amount max-lima-amount tx-sender)
       (add-lima-liquidity stx-amount)
     )
   )
