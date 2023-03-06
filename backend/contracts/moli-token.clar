@@ -48,13 +48,11 @@
 ;; public functions
 
 ;; transfer function 
-;; sample call (contract-call? .moli-token transfer u500 tx-sender 'STNHKEPYEPJ8ET55ZZ0M5A34J0R3N5FM2CMMMAZ6 (some 0x123456) ) (memo (optional (buff 34)))
 (define-public (transfer (amount uint) (sender principal) (recipient principal) )
     (begin
         (asserts! (is-eq tx-sender sender) err-not-token-owner)
                 ;; #[filter(amount, recipient)]
         (try! (ft-transfer? moli amount sender recipient))
-        ;; (match memo to-print (print to-print) 0x)
         (ok true)
     )
 )
