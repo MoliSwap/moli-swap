@@ -6,15 +6,12 @@ const inter = Inter({ subsets: ['latin'] })
 export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center py-2">
-    <PageHeading>My Exchange</PageHeading>
+    <PageHeading>Swap Page</PageHeading>
   </div>
   )
 }
 
 /**
- * So you can build your landing page here, 
-the connect wallet button would be on this page 
-and it would appear on the navbar too
+ * This is the swap page, ofcourse it is obviouse
+ * so let me just keep it breif
  */
-
- 
