@@ -21,7 +21,7 @@
 (define-constant err-zero-stx (err u200))
 (define-constant err-zero-moli-tokens (err u201))
 (define-constant err-zero-lima-tokens (err u202))
-(define-constant fee-basis-points u50) ;; 0.5%
+(define-constant fee-basis-points u30) ;; 0.3%
 
 ;; Get contract STX balance
 (define-private (get-stx-balance)
@@ -370,17 +370,15 @@
             (moli-balance (get-moli-balance))
             (lima-balance (get-lima-balance))
             (liquidity-token-supply (contract-call? .moli-lp get-total-supply))
-
             (moli-withdrawn (/ (* moli-balance liquidity-burned) liquidity-token-supply))
             (lima-withdrawn (/ (* lima-balance liquidity-burned) liquidity-token-supply))
-
             (contract-address (as-contract tx-sender))
             (burner tx-sender)
         )
       (begin 
        
         (try! (contract-call? .moli-lp burn liquidity-burned))
-        (try! (contract-call? .moli-token transfer moli-withdrawn contract-address burner))
+        (try! (as-contract (contract-call? .moli-token transfer moli-withdrawn contract-address burner)))
         (as-contract (contract-call? .lima-token transfer lima-withdrawn contract-address burner))
       )
     )
